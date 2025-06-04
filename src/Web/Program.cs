@@ -85,7 +85,12 @@ builder.Services.Configure<ServiceConfig>(config =>
 builder.Services.AddBlazor(builder.Configuration);
 
 builder.Services.AddMetronome();
-builder.AddSeqEndpoint(connectionName: "seq");
+
+string seqUrl = builder.Configuration["Seq:ServerUrl"] ?? "http://localhost:5341";
+builder.AddSeqEndpoint(connectionName: "seq", options =>
+{
+    options.ServerUrl = seqUrl;
+});
 
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
