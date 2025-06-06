@@ -1,4 +1,5 @@
-﻿using BlazorShared;
+﻿using System;
+using BlazorShared;
 using FastEndpoints;
 using FastEndpoints.Swagger;
 using Microsoft.AspNetCore.Builder;
@@ -44,7 +45,12 @@ builder.Services.Configure<BaseUrlConfiguration>(configSection);
 var baseUrlConfig = configSection.Get<BaseUrlConfiguration>();
 builder.Services.AddCorsPolicy(CORS_POLICY, baseUrlConfig!);
 
+builder.Services.AddApplicationInsightsTelemetry();
+builder.Logging.AddApplicationInsights();
+
 builder.Services.AddControllers();
+
+throw new Exception("Cannot move further");
 
 // TODO: Consider removing AutoMapper dependency (FastEndpoints already has its own Mapper support)
 builder.Services.AddAutoMapper(typeof(MappingProfile).Assembly);
@@ -52,12 +58,12 @@ builder.Services.AddAutoMapper(typeof(MappingProfile).Assembly);
 builder.Services.AddSwagger();
 
 builder.Services.AddMetronome();
-string seqUrl = builder.Configuration["Seq:ServerUrl"] ?? "http://localhost:5341";
+//string seqUrl = builder.Configuration["Seq:ServerUrl"] ?? "http://localhost:5341";
 
-builder.AddSeqEndpoint(connectionName: "seq", options =>
-{
-    options.ServerUrl = seqUrl;
-});
+//builder.AddSeqEndpoint(connectionName: "seq", options =>
+//{
+//    options.ServerUrl = seqUrl;
+//});
 
 var app = builder.Build();
 
@@ -70,7 +76,7 @@ if (app.Environment.IsDevelopment())
     app.UseDeveloperExceptionPage();
 }
 
-app.UseMiddleware<ExceptionMiddleware>();
+//app.UseMiddleware<ExceptionMiddleware>();
 
 app.UseHttpsRedirection();
 
