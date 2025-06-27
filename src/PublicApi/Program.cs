@@ -50,8 +50,6 @@ builder.Logging.AddApplicationInsights();
 
 builder.Services.AddControllers();
 
-throw new Exception("Cannot move further");
-
 // TODO: Consider removing AutoMapper dependency (FastEndpoints already has its own Mapper support)
 builder.Services.AddAutoMapper(typeof(MappingProfile).Assembly);
 

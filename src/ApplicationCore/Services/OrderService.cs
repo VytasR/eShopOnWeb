@@ -1,4 +1,9 @@
-﻿using System.Linq;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Net.Http;
+using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 using Ardalis.GuardClauses;
 using Microsoft.eShopWeb.ApplicationCore.Entities;
@@ -15,16 +20,19 @@ public class OrderService : IOrderService
     private readonly IUriComposer _uriComposer;
     private readonly IRepository<Basket> _basketRepository;
     private readonly IRepository<CatalogItem> _itemRepository;
+    private readonly HttpClient _httpClient;
 
     public OrderService(IRepository<Basket> basketRepository,
         IRepository<CatalogItem> itemRepository,
         IRepository<Order> orderRepository,
-        IUriComposer uriComposer)
+        IUriComposer uriComposer,
+        HttpClient httpClient)
     {
         _orderRepository = orderRepository;
         _uriComposer = uriComposer;
         _basketRepository = basketRepository;
         _itemRepository = itemRepository;
+        _httpClient = httpClient;
     }
 
     public async Task CreateOrderAsync(int basketId, Address shippingAddress)
@@ -49,5 +57,36 @@ public class OrderService : IOrderService
         var order = new Order(basket.BuyerId, shippingAddress, items);
 
         await _orderRepository.AddAsync(order);
+
+        await ReserveOrderItemsAsync(order);
+    }
+
+    private async Task ReserveOrderItemsAsync(Order order)
+    {
+        try
+        {
+            var orderReservationRequest = new OrderReservationRequest
+            {
+                Items = [.. order.OrderItems.Select(x => new OrderItemReservation { CatalogItemId = x.ItemOrdered.CatalogItemId, Quantity = x.Units })]
+            };
+
+            var json = JsonSerializer.Serialize(orderReservationRequest);
+
+            var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+            var reservationFunctionUrl = Environment.GetEnvironmentVariable("OrderItemsReserverUrl");
+
+            var response = await _httpClient.PostAsync(reservationFunctionUrl, content);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorContent = await response.Content.ReadAsStringAsync();                
+                throw new Exception($"Failed to reserve order items. Status: {response.StatusCode}, Error: {errorContent}");
+            }
+        }
+        catch (Exception ex)
+        {
+            throw new Exception("Error occurred while reserving order items", ex);
+        }
     }
 }
