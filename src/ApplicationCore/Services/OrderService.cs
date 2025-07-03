@@ -67,7 +67,10 @@ public class OrderService : IOrderService
         {
             var orderReservationRequest = new OrderReservationRequest
             {
-                Items = [.. order.OrderItems.Select(x => new OrderItemReservation { CatalogItemId = x.ItemOrdered.CatalogItemId, Quantity = x.Units })]
+                OrderId = order.Id,
+                ShippingAddress = order.ShipToAddress,
+                Items = [.. order.OrderItems.Select(x => new OrderItemReservation { CatalogItemId = x.ItemOrdered.CatalogItemId, Quantity = x.Units })],
+                FinalPrice = order.Total()
             };
 
             var json = JsonSerializer.Serialize(orderReservationRequest);
